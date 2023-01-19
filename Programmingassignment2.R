@@ -37,3 +37,9 @@ cacheslove <- function(x, ...){
                s
 }
 
+## Test the functions
+x <- matrix(rnorm(25),5,5)
+x1 <- makeCacheMatrix(x)
+cacheslove(x1)
+cacheslove(x1)
+
