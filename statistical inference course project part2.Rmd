@@ -1,0 +1,60 @@
+---
+title: "Statistical Inference Course Project Part2"
+author: "Caitlin"
+date: "2022-12-28"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load data
+```{r}
+library(datasets)
+data(ToothGrowth)
+str(ToothGrowth)
+
+```
+
+## Summary of the dataset
+
+```{r }
+summary(ToothGrowth)
+```
+
+## Summary of the dataset
+
+```{r }
+library(ggplot2)
+
+ggplot(data = ToothGrowth, aes(x = dose, y = len)) +
+  geom_boxplot(aes(fill=factor(dose)))+
+  geom_point()+
+  facet_grid((.~supp))+
+  ggtitle("Tooth Growth by Supplement & Dosage")
+
+```
+
+It seems that when the dosage is hight at 2.0, the length of teeth growthe are close with the two different supplements. However, with dose level at 0.5 or 1.0, tooth growth is larger with OJ. 
+
+## Hypothesis Test
+
+H0: Orange juice has an impact on tooth growth compared to ascorbic acid.
+H1: organge juice does not have an impact on tooth growth compared to ascorbic acid.
+
+```{r }
+
+t.test(len ~ supp, data=ToothGrowth)
+
+t.test(len ~ supp, data=ToothGrowth[ToothGrowth$dose < 2,])
+
+t.test(len ~ supp, data=ToothGrowth[ToothGrowth$dose == 2,])
+
+```
+
+## Conclusions
+
+Base on the above analysis, assuming the supplement, orange juice, or ascorbic acid were independently and identically distributed among the subjects, we can conclude that the orange juice, when applied with moderate dosage, e.g. less than 2 mg, would have a significant impact on the tooth growth on Guinea pigs.
