@@ -1,0 +1,156 @@
+---
+title: "Analysis of my running records from 2019 to 2022"
+author: "Caitlin"
+date: "2023-03-06"
+output: html_document
+---
+## Reasons to conduct this data analysis
+Pre-covid, I would take my golden retriever to go hiking with friends almost 
+every weekend. I wasn't so fond of running that time because I had a lot of outdoor
+activity options and I'd always prefer those activities in which I could bring
+my dog. Since 2020, people barely traveled out of their own cities due to all kinds 
+of restrictions. Likewise, I started to run more because it was the easiest exercise 
+without contact to other people. Now that pre-covid life if gradually coming back, 
+I am very curious about how my exercise pattern has changed especially for running, 
+so I conduct this analysis to figure out.
+
+## Load packages needed
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(readxl)
+```
+
+## Load dataset and take a look
+
+```{r, echo = TRUE}
+running <- read_xlsx("running.xlsx")
+ 
+head(running)
+str(running)
+
+na.count <- colSums(is.na(running))
+na.count
+
+running <- running[, -which(names(running) == "心率记录")]
+head(running)
+```
+
+## Processing data to prepare for analysis
+1.unify column names \n
+
+2.format time values \n
+
+3.format numeric values \n
+
+4.mutate data to get the values needed for analysis \n
+
+
+```{r, echo = TRUE}
+names(running) <- c("user","type","duration","start_time","finish_time","calories","distance","avg_heart_rate","max_heart_rate")
+names(running)
+
+running$start_time <- strptime(running$start_time, format = "%Y-%m-%d %H:%M:%S")
+running$finish_time <- strptime(running$finish_time, format = "%Y-%m-%d %H:%M:%S")
+
+running$duration <- as.numeric(running$duration)
+running$calories <- as.numeric(running$calories)
+running$distance <- as.numeric(running$distance)
+
+new_running <- running %>% mutate(year = start_time$year+1900, month = start_time$mon +1, daytype = ifelse(running$start_time$wday %in% c(0,6), "weekend","weekday"), duration = duration/60/60, distance = distance/1000)
+
+str(new_running)
+```
+
+## Overview of yearly statistics
+In the past 3 years, I ran the most with 56 records in 2022. 2019 was the year when I first started trying running with only 3 records while I didn't run at all in 2020.
+Then 2021 and 2022 saw the progress of increasing frequency from 12 to 56. It's most likely that covid-19 interrunpted my running practice in 2020 and I started over at some point in 2021 and finnaly made running as a regular hobby with about 3 times weekly frequency in 2022.
+
+```{r, echo = TRUE}
+
+#organize data by year dimension
+new_running_year <- new_running %>% group_by(year) %>% summarize(distance= sum(distance), duration= sum(duration),calories=sum(calories), frequency =n())
+
+new_running_year
+
+#make bar graphs to compare frequency, distance, duration and calories of each year
+par(mfrow = c(2,2))
+barplot(frequency~year,data = new_running_year,width = c(80,80,80), xlab = "Year", ylab = "Frequency", col = "blue")
+barplot(distance~year,data = new_running_year, xlab = "Year", ylab = "Distance", col = "green")
+barplot(duration~year,data = new_running_year, xlab = "Year", ylab = "Duration", col = "pink")
+barplot(calories~year,data = new_running_year, xlab = "Year", ylab = "Calories", col = "yellow")
+
+new_running_year_per <- new_running_year %>% mutate(percent = frequency/sum(new_running_year$frequency))
+new_running_year_per
+
+p0 <- ggplot(new_running_year_per, aes( x= "", y = percent, fill = year))+ geom_bar(stat = "identity", width =1) + coord_polar("y", start = 0) + geom_text(aes(label = frequency))
+a0 <- grid.arrange(p0,ncol =2)
+
+```
+
+## Compare data by daytype dimension to see my preference
+
+An interesting observation is that in 2021 I ran in a longer distance in weekdays than in weekends, but in 2022 it was the oppsite while the average distance reamained close.
+
+```{r, echo = TRUE}
+#make comparisons between weekday and weekend
+new_running_by_daytype <- new_running %>% group_by(year, daytype) %>% summarize(distance= sum(distance), duration= sum(duration),calories=sum(calories), frequency =n(),average_distance = distance/frequency, average_duration = duration/frequency)
+
+new_running_by_daytype
+
+library(gridExtra)
+
+p1 <- ggplot(data = new_running_by_daytype, aes(x = year, y = frequency, fill = daytype)) + geom_col(position = position_dodge()) 
+p2 <- ggplot(data = new_running_by_daytype, aes(x = year, y = distance, fill = daytype)) + geom_col(position = position_dodge())
+p3 <- ggplot(data = new_running_by_daytype, aes(x = year, y = duration, fill = daytype)) + geom_col(position = position_dodge())
+p4 <- ggplot(data = new_running_by_daytype, aes(x = year, y = calories, fill = daytype)) + geom_col(position = position_dodge())
+p5 <- ggplot(data = new_running_by_daytype, aes(x = year, y = average_distance, fill = daytype)) + geom_col(position = position_dodge())
+p6 <- ggplot(data = new_running_by_daytype, aes(x = year, y = average_duration, fill = daytype)) + geom_col(position = position_dodge())
+
+aa <- grid.arrange(p1,p2,p3,p4,p5,p6, nrow = 3, ncol = 2)
+
+```
+
+## Take a closer look at 2022 data
+
+show 4-5 types of charts
+
+show data transforming skills to extract needed values
+
+regression, think what type of case can be presented
+
+
+```{r, echo = TRUE}
+
+running2022 <- new_running %>% filter((year == 2022)) %>% group_by(month) %>% mutate(frequency= n())
+ggplot(running2022, aes( x = month, y = frequency)) + geom_col(fill = "blue") + scale_x_binned(n.breaks = 12, right =FALSE) 
+
+# ggplot(running2022, aes( x = "", y = frequency, fill = month))+ geom_bar(stat = "identity", width =1) + coord_polar("y", start = 0)
+
+running2022 <- new_running %>% filter((year == 2022)) %>% group_by(month, daytype) %>% mutate( frequency= n())
+ggplot(running2022, aes( x = month, y = frequency, fill = daytype)) + geom_col(position = position_dodge()) + geom_line()
+
+
+#define running time as morning, afternoon and night to see my prefernce
+
+
+
+```
+
+## Reasons to conduct this data analysis
+```{r, echo = TRUE}
+
+```
+
+## Reasons to conduct this data analysis
+```{r, echo = TRUE}
+
+```
+
+## Plot data to visualize 
+```{r, echo = TRUE}
+
+```
+
+
